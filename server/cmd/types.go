@@ -29,11 +29,20 @@ type RegisterRequest struct {
 	Surname  string `json:"surname"`
 }
 
-// func NewRegisterRequest(email, password, name, surname string) *RegisterRequest {
-// 	return &RegisterRequest{
-// 		Email:    email,
-// 		Password: password,
-// 		Name:     name,
-// 		Surname:  surname,
-// 	}
-// }
+type LoginResponse struct {
+	ResponseCode    int    `json:"response_code"`
+	ResponseMessage string `json:"response_message"`
+	AuthToken       string `json:"auth_token"`
+	Name            string `json:"name"`
+	Surname         string `json:"surname"`
+}
+
+type User struct {
+	Email         string `json:"email"`
+	Password      string `json:"password"`
+	Name          string `json:"name"`
+	Surname       string `json:"surname"`
+	Id            int    `json:"id"`
+	AuthToken     string `json:"auth_token"`
+	LoggedInCount int    `json:"logged_in_count"`
+}

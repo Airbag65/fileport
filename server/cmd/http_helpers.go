@@ -16,6 +16,21 @@ func BadRequest(w http.ResponseWriter) {
 	w.Write([]byte("Bad request"))
 }
 
+func InternalServerError(w http.ResponseWriter) {
+	w.WriteHeader(500)
+	w.Write([]byte("Internal server error"))
+}
+
+func Unauthorized(w http.ResponseWriter) {
+	w.WriteHeader(401)
+	w.Write([]byte("Unauthorized"))
+}
+
+func NotFound(w http.ResponseWriter) {
+	w.WriteHeader(404)
+	w.Write([]byte("Not found"))
+}
+
 func GetRequestIP(r *http.Request) string {
 	return strings.Split(r.RemoteAddr, ":")[0]
 }
