@@ -1,0 +1,4 @@
+
+
+build:
+    @go build -C ./cmd -o ../target/bin/fileport-server
