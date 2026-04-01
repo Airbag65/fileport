@@ -1,0 +1,16 @@
+
+build:
+    @go build -o target/bin/fileport
+
+install: build
+    @cp target/bin/fileport ~/go/bin/fileport
+    @cp target/bin/fileport ~/go/bin/fp
+    @cp ../assets/fileport_title.txt ~/.fileport/fileport_title.txt
+    @touch ~/.fileport/config.toml
+    @echo "[global]" >> ~/.fileport/config.toml
+    @echo "source_path = \"$(pwd)\"" >> ~/.fileport/config.toml
+    @echo "ip_addr = \"127.0.0.1\"" >> ~/.fileport/config.toml
+
+update: build
+    @cp target/bin/fileport ~/go/bin/fileport
+    @cp target/bin/fileport ~/go/bin/fp
