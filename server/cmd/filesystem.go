@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 // GetUserDirPath looks for the path string for the user
@@ -31,25 +32,20 @@ const (
 
 type INode interface {
 	Type() INodeType
-	Name() string
 	Print(string, bool)
 }
 
 type DirectoryINode struct {
-	name  string
-	Nodes []INode
+	Name  string  `json:"dir_name"`
+	Nodes []INode `json:"dir_nodes"`
 }
 
 func (d *DirectoryINode) Type() INodeType {
 	return Directory
 }
 
-func (d *DirectoryINode) Name() string {
-	return d.name
-}
-
 func (d *DirectoryINode) Print(indent string, lastINode bool) {
-	fmt.Printf("%s+- %s (directory) \n", indent, d.Name())
+	fmt.Printf("%s+- %s (directory) \n", indent, d.Name)
 
 	if lastINode {
 		indent += "   "
@@ -63,29 +59,81 @@ func (d *DirectoryINode) Print(indent string, lastINode bool) {
 }
 
 type FileINode struct {
-	name    string
-	Content []byte
+	Name string `json:"file_name"`
 }
 
 func (f *FileINode) Type() INodeType {
 	return File
 }
 
-func (f *FileINode) Name() string {
-	return f.name
-}
-
 func (f *FileINode) Print(indent string, lastINode bool) {
-	fmt.Printf("%s+- %s\n", indent, f.Name())
+	fmt.Printf("%s+- %s\n", indent, f.Name)
 }
 
 func NewDirectoryINode(name string, nodes []INode) *DirectoryINode {
 	return &DirectoryINode{
-		name:  name,
+		Name:  name,
 		Nodes: nodes,
 	}
 }
 
 func NewFileINode(name string) *FileINode {
-	return &FileINode{name: name}
+	return &FileINode{Name: name}
+}
+
+func (d *DirectoryINode) AddINode(node INode) {
+	d.Nodes = append(d.Nodes, node)
+}
+
+func GetDirectoryContent(email string) (*DirectoryINode, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("%s/.fileport/users/%s", homeDir, email)
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return nil, err
+	}
+	rootContent := []INode{}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			rootContent = append(rootContent, NewDirectoryINode(entry.Name(), []INode{}))
+		} else {
+			rootContent = append(rootContent, NewFileINode(entry.Name()))
+		}
+	}
+	if strings.Split(email, "/")[1] == "." && len(strings.Split(email, "/")) == 2 {
+		email = strings.Split(email, "/")[0]
+	}
+	dir := NewDirectoryINode(email, rootContent)
+	return dir, nil
+}
+
+func GetDirectoryContentR(email string) (*DirectoryINode, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("%s/.fileport/users/%s", homeDir, email)
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return nil, err
+	}
+	rootContent := []INode{}
+	for _, entry := range entries {
+		if entry.IsDir() {
+
+			newDir, err := GetDirectoryContentR(fmt.Sprintf("%s/%s", email, entry.Name()))
+			if err != nil {
+				return nil, err
+			}
+			rootContent = append(rootContent, newDir)
+		} else {
+			rootContent = append(rootContent, NewFileINode(entry.Name()))
+		}
+	}
+	dirName := strings.Split(email, "/")[len(strings.Split(email, "/"))-1]
+	dir := NewDirectoryINode((map[bool]string{true: strings.Split(email, "/")[0], false: dirName})[dirName == "."], rootContent)
+	return dir, nil
 }

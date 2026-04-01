@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 )
@@ -12,8 +13,29 @@ func listDirectoryHandler(w http.ResponseWriter, r *http.Request) {
 		Unauthorized(w)
 		return
 	}
+	var recursive bool
+	if r.Header.Get("recursive") == "true" {
+		recursive = true
+	} else {
+		recursive = false
+	}
+	targetDir := r.Header.Get("target")
+	if targetDir == "" {
+		targetDir = "."
+	}
 
-	dir, err := GetUserDirPath(email)
+	_, err = GetUserDirPath(email)
+	if err != nil {
+		InternalServerError(w)
+		return
+	}
+	var dir *DirectoryINode
+	path := fmt.Sprintf("%s/%s", email, targetDir)
+	if recursive {
+		dir, err = GetDirectoryContentR(path)
+	} else {
+		dir, err = GetDirectoryContent(path)
+	}
 	if err != nil {
 		InternalServerError(w)
 		return
