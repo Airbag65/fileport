@@ -210,25 +210,12 @@ func (c *RegisterCommand) Execute() {
 	green.Printf("You are now logged in as '%s %s'\n", name, surname)
 }
 
-func GetCommand(args []string) Command {
-	if len(args) < 1 {
-		fmt.Println("Usage: fileport <command>")
-		yellow.Println("Run 'fileport help' for further instructions")
-		return nil
+func (c *ListCommand) Execute() {
+	dir, err := net.GetFilesList(".")
+	if err != nil {
+		red.Println("Something went wrong")
+		fmt.Println(err)
+		return
 	}
-	switch args[0] {
-	case "help":
-		return &HelpCommand{}
-	case "status":
-		return &StatusCommand{}
-	case "login":
-		return &LoginCommad{}
-	case "signout":
-		return &SignOutCommand{}
-	case "register":
-		return &RegisterCommand{}
-	default:
-		fmt.Println("fileport: Invalid argument")
-		return nil
-	}
+	dir.Print("", true)
 }
