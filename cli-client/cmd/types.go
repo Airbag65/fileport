@@ -1,6 +1,8 @@
 package cmd
 
-import "github.com/fatih/color"
+import (
+	"github.com/fatih/color"
+)
 
 type Command interface {
 	Execute()
@@ -12,6 +14,6 @@ type StatusCommand struct{}
 
 var (
 	red      = color.RGB(255, 0, 0)
+	green    = color.RGB(0, 255, 0)
 	fpYellow = color.RGB(255, 249, 87)
 )
-

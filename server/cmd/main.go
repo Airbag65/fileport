@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -22,5 +23,6 @@ func main() {
 	server.HandleFunc("GET /files/list", listDirectoryHandler)
 
 	handler := cors.Default().Handler(server)
+	fmt.Println("Listening on :8001")
 	http.ListenAndServe(":8001", handler)
 }

@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"encoding/json"
 	"os"
 
 	"github.com/BurntSushi/toml"
@@ -39,4 +40,36 @@ func GetTitle() (string, error) {
 
 	content, err := os.ReadFile(path)
 	return string(content), err
+}
+
+type LocalAuth struct {
+	Name      string `json:"name"`
+	Surname   string `json:"surname"`
+	Email     string `json:"email"`
+	AuthToken string `json:"auth_token"`
+}
+
+func GetLocalAuth() (*LocalAuth, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	path := homeDir + "/.portsuite/authentication.json"
+	authFile, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var auth LocalAuth
+	if err = json.Unmarshal(authFile, &auth); err != nil {
+		return nil, err
+	}
+	return &auth, nil
+}
+
+func GetIP() (string, error) {
+	conf, err := GetConfiguration()
+	if err != nil {
+		return "", err
+	}
+	return conf.Global.IpAddr, nil
 }
