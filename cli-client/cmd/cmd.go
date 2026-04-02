@@ -25,12 +25,7 @@ func (c *StatusCommand) Execute() {
 		red.Println("Something went wrong")
 		return
 	}
-	authStatus, err := net.AuthServiceIsUp()
-	if err != nil {
-		red.Println("Something went wrong")
-		return
-	}
-	if !authStatus {
+	if authStatus, _ := net.AuthServiceIsUp(); !authStatus {
 		red.Println("Could not connect to the server")
 		fmt.Printf("Using IP: %s\n", ip)
 		return
@@ -68,6 +63,10 @@ func (c *StatusCommand) Execute() {
 }
 
 func (c *LoginCommad) Execute() {
+	if authStatus, _ := net.AuthServiceIsUp(); !authStatus {
+		red.Println("Could not connect to the server")
+		return
+	}
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("\033[H\033[2J")
 	fmt.Print("Email: ")
@@ -100,6 +99,117 @@ func (c *LoginCommad) Execute() {
 	}
 }
 
+func (c *SignOutCommand) Execute() {
+	if authStatus, _ := net.AuthServiceIsUp(); !authStatus {
+		red.Println("Could not connect to the server")
+		return
+	}
+	localAuth, err := fs.GetLocalAuth()
+	if err != nil {
+		red.Println("Something went wrong")
+		return
+	}
+	if localAuth.Email == "" {
+		yellow.Println("You were already signed out")
+		return
+	}
+	responseCode, err := net.SignOut(localAuth.Email)
+	if err != nil {
+		red.Println("Something went wrong")
+		return
+	}
+	switch responseCode {
+	case net.OK:
+		if err = fs.SaveLocalAuth("", "", "", ""); err != nil {
+			red.Println("Something went wrong")
+			return
+		}
+		green.Println("You are now signed out")
+		return
+	case net.NotModified:
+		yellow.Println("You were already signed out")
+		return
+	}
+}
+
+func (c *RegisterCommand) Execute() {
+	if authStatus, _ := net.AuthServiceIsUp(); !authStatus {
+		red.Println("Could not connect to the server")
+		return
+	}
+	auth, err := fs.GetLocalAuth()
+	if err != nil {
+		red.Println("Something went wrong")
+		return
+	}
+	if auth.AuthToken != "" {
+		res, err := net.ValidateUserToken(auth.Email, auth.AuthToken)
+		if err != nil {
+			red.Println("Something went wrong")
+			return
+		}
+		if res == net.OK {
+			yellow.Println("Cannot create new user while signed in")
+			return
+		}
+	}
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("\033[H\033[2J")
+	fmt.Print("Email: ")
+	email, err := reader.ReadString('\n')
+	if err != nil {
+		red.Println("Something went wrong")
+		return
+	}
+	email = strings.TrimSuffix(email, "\n")
+	fmt.Print("Name: ")
+	name, err := reader.ReadString('\n')
+	if err != nil {
+		red.Println("Something went wrong")
+		return
+	}
+	name = strings.TrimSuffix(name, "\n")
+	fmt.Print("Surname: ")
+	surname, err := reader.ReadString('\n')
+	if err != nil {
+		red.Println("Something went wrong")
+		return
+	}
+	surname = strings.TrimSuffix(surname, "\n")
+	var password string
+	var confirmPassword string
+	for {
+		fmt.Print("Password: ")
+		password = GetPassword()
+		fmt.Print("Confirm password: ")
+		confirmPassword = GetPassword()
+		if password == confirmPassword {
+			break
+		}
+		red.Println("Passwords must match")
+	}
+	responseCode, err := net.RegisterUser(email, name, surname, encryptPassword(password))
+	switch responseCode {
+	case net.ImATeapot:
+		yellow.Printf("User with email '%s' already exists\n", email)
+		return
+	case net.OK:
+		green.Printf("Created new user '%s %s' with email '%s'\n", name, surname, email)
+	}
+
+	loginRes, err := net.Login(email, encryptPassword(password))
+	if err != nil {
+		red.Println("Something went wrong")
+		return
+	}
+	if err = fs.SaveLocalAuth(name, surname, email, loginRes.AuthToken); err != nil {
+		red.Println("Something went wrong")
+		return
+	}
+	fmt.Println()
+	green.Printf("You are now logged in as '%s %s'\n", name, surname)
+}
+
 func GetCommand(args []string) Command {
 	if len(args) < 1 {
 		fmt.Println("Usage: fileport <command>")
@@ -113,6 +223,10 @@ func GetCommand(args []string) Command {
 		return &StatusCommand{}
 	case "login":
 		return &LoginCommad{}
+	case "signout":
+		return &SignOutCommand{}
+	case "register":
+		return &RegisterCommand{}
 	default:
 		fmt.Println("fileport: Invalid argument")
 		return nil

@@ -14,6 +14,10 @@ type StatusCommand struct{}
 
 type LoginCommad struct{}
 
+type SignOutCommand struct{}
+
+type RegisterCommand struct{}
+
 var (
 	red      = color.RGB(255, 0, 0)
 	green    = color.RGB(0, 255, 0)

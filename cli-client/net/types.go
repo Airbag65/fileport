@@ -25,6 +25,7 @@ const (
 	NotModified         ResponseCode = 304
 	ImATeapot           ResponseCode = 418
 	InternalServerError ResponseCode = 500
+	Nil                 ResponseCode = -1
 )
 
 type LoginRequset struct {
@@ -40,6 +41,19 @@ type LoginResponse struct {
 	Name            string `json:"name"`
 	Surname         string `json:"surname"`
 	AuthToken       string `json:"auth_token"`
+}
+
+type SignOutReq struct {
+	Email            string `json:"email"`
+	ClientIdentifier string `json:"client_identifier"`
+	IpAddr           string `json:"ip_addr"`
+}
+
+type RegisterRequest struct {
+	Email    string `json:"email"`
+	Name     string `json:"name"`
+	Surname  string `json:"surname"`
+	Password string `json:"password"`
 }
 
 func GetOutboundIP() string {
