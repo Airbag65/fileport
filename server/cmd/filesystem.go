@@ -23,6 +23,18 @@ func GetUserDirPath(email string) (string, error) {
 	return userDir, nil
 }
 
+func DirectoryExists(path string) bool {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return false
+	}
+	targetDir := fmt.Sprintf("%s/.fileport/users/%s", homeDir, path)
+	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
 type INodeType int
 
 const (
@@ -90,6 +102,9 @@ func GetDirectoryContent(email string) (*DirectoryINode, error) {
 	if err != nil {
 		return nil, err
 	}
+	if !DirectoryExists(email) {
+		return nil, nil
+	}
 	path := fmt.Sprintf("%s/.fileport/users/%s", homeDir, email)
 	entries, err := os.ReadDir(path)
 	if err != nil {
@@ -114,6 +129,10 @@ func GetDirectoryContentR(email string) (*DirectoryINode, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return nil, err
+	}
+
+	if !DirectoryExists(email) {
+		return nil, nil
 	}
 	path := fmt.Sprintf("%s/.fileport/users/%s", homeDir, email)
 	entries, err := os.ReadDir(path)

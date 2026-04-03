@@ -40,6 +40,10 @@ func listDirectoryHandler(w http.ResponseWriter, r *http.Request) {
 		InternalServerError(w)
 		return
 	}
+	if dir == nil {
+		NotFound(w)
+		return
+	}
 
 	WriteJSON(w, dir)
 }

@@ -217,5 +217,9 @@ func (c *ListCommand) Execute() {
 		fmt.Println(err)
 		return
 	}
+	if dir == nil {
+		yellow.Printf("'%s': no such file or directory\n", c.Path)
+		return
+	}
 	dir.Print()
 }
