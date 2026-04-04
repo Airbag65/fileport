@@ -2,12 +2,16 @@ package cmd
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/binary"
 	"fmt"
+	"io"
+	"net"
 	"os"
 	"strings"
 
 	"github.com/Airbag65/fileport/cli-client/fs"
-	"github.com/Airbag65/fileport/cli-client/net"
+	fpNet "github.com/Airbag65/fileport/cli-client/net"
 )
 
 func (c *HelpCommand) Execute() {
@@ -25,7 +29,7 @@ func (c *StatusCommand) Execute() {
 		red.Println("Something went wrong")
 		return
 	}
-	if authStatus, _ := net.AuthServiceIsUp(); !authStatus {
+	if authStatus, _ := fpNet.AuthServiceIsUp(); !authStatus {
 		red.Println("Could not connect to the server")
 		fmt.Printf("Using IP: %s\n", ip)
 		return
@@ -42,12 +46,12 @@ func (c *StatusCommand) Execute() {
 		fmt.Printf("Using IP: %s\n", ip)
 		return
 	}
-	code, err := net.ValidateUserToken(auth.Email, auth.AuthToken)
+	code, err := fpNet.ValidateUserToken(auth.Email, auth.AuthToken)
 	if err != nil {
 		red.Println("Something went wrong")
 		return
 	}
-	if code != net.OK {
+	if code != fpNet.OK {
 		red.Println("You are not signed in to fileport!")
 		red.Println("Run 'fileport login' to sign in")
 		fmt.Printf("Using IP: %s\n", ip)
@@ -63,7 +67,7 @@ func (c *StatusCommand) Execute() {
 }
 
 func (c *LoginCommad) Execute() {
-	if authStatus, _ := net.AuthServiceIsUp(); !authStatus {
+	if authStatus, _ := fpNet.AuthServiceIsUp(); !authStatus {
 		red.Println("Could not connect to the server")
 		return
 	}
@@ -78,19 +82,19 @@ func (c *LoginCommad) Execute() {
 	email = strings.TrimSuffix(email, "\n")
 	fmt.Print("Password: ")
 	password := GetPassword()
-	response, err := net.Login(email, encryptPassword(password))
+	response, err := fpNet.Login(email, encryptPassword(password))
 	if err != nil {
 		red.Println("Something went wrong")
 		return
 	}
-	switch net.ResponseCode(response.ResponseCode) {
-	case net.NotFound:
+	switch fpNet.ResponseCode(response.ResponseCode) {
+	case fpNet.NotFound:
 		yellow.Printf("Account with with email '%s' does not exist\n", email)
-	case net.ImATeapot:
+	case fpNet.ImATeapot:
 		yellow.Printf("Already logged with email '%s'\n", email)
-	case net.Unauthorized:
+	case fpNet.Unauthorized:
 		red.Println("Incorrect password!")
-	case net.OK:
+	case fpNet.OK:
 		if err = fs.SaveLocalAuth(response.Name, response.Surname, email, response.AuthToken); err != nil {
 			red.Println("Something went wrong")
 			return
@@ -100,7 +104,7 @@ func (c *LoginCommad) Execute() {
 }
 
 func (c *SignOutCommand) Execute() {
-	if authStatus, _ := net.AuthServiceIsUp(); !authStatus {
+	if authStatus, _ := fpNet.AuthServiceIsUp(); !authStatus {
 		red.Println("Could not connect to the server")
 		return
 	}
@@ -113,27 +117,27 @@ func (c *SignOutCommand) Execute() {
 		yellow.Println("You were already signed out")
 		return
 	}
-	responseCode, err := net.SignOut(localAuth.Email)
+	responseCode, err := fpNet.SignOut(localAuth.Email)
 	if err != nil {
 		red.Println("Something went wrong")
 		return
 	}
 	switch responseCode {
-	case net.OK:
+	case fpNet.OK:
 		if err = fs.SaveLocalAuth("", "", "", ""); err != nil {
 			red.Println("Something went wrong")
 			return
 		}
 		green.Println("You are now signed out")
 		return
-	case net.NotModified:
+	case fpNet.NotModified:
 		yellow.Println("You were already signed out")
 		return
 	}
 }
 
 func (c *RegisterCommand) Execute() {
-	if authStatus, _ := net.AuthServiceIsUp(); !authStatus {
+	if authStatus, _ := fpNet.AuthServiceIsUp(); !authStatus {
 		red.Println("Could not connect to the server")
 		return
 	}
@@ -143,12 +147,12 @@ func (c *RegisterCommand) Execute() {
 		return
 	}
 	if auth.AuthToken != "" {
-		res, err := net.ValidateUserToken(auth.Email, auth.AuthToken)
+		res, err := fpNet.ValidateUserToken(auth.Email, auth.AuthToken)
 		if err != nil {
 			red.Println("Something went wrong")
 			return
 		}
-		if res == net.OK {
+		if res == fpNet.OK {
 			yellow.Println("Cannot create new user while signed in")
 			return
 		}
@@ -188,16 +192,16 @@ func (c *RegisterCommand) Execute() {
 		}
 		red.Println("Passwords must match")
 	}
-	responseCode, err := net.RegisterUser(email, name, surname, encryptPassword(password))
+	responseCode, err := fpNet.RegisterUser(email, name, surname, encryptPassword(password))
 	switch responseCode {
-	case net.ImATeapot:
+	case fpNet.ImATeapot:
 		yellow.Printf("User with email '%s' already exists\n", email)
 		return
-	case net.OK:
+	case fpNet.OK:
 		green.Printf("Created new user '%s %s' with email '%s'\n", name, surname, email)
 	}
 
-	loginRes, err := net.Login(email, encryptPassword(password))
+	loginRes, err := fpNet.Login(email, encryptPassword(password))
 	if err != nil {
 		red.Println("Something went wrong")
 		return
@@ -211,7 +215,7 @@ func (c *RegisterCommand) Execute() {
 }
 
 func (c *ListCommand) Execute() {
-	dir, err := net.GetFilesList(c.Path, c.Recursive)
+	dir, err := fpNet.GetFilesList(c.Path, c.Recursive)
 	if err != nil {
 		red.Println("Something went wrong")
 		fmt.Println(err)
@@ -222,4 +226,29 @@ func (c *ListCommand) Execute() {
 		return
 	}
 	dir.Print()
+}
+
+func (c *GetCommand) Execute() {
+	response, err := fpNet.GetFile(c.Path)
+	if err != nil {
+		red.Println("Something went wrong")
+		return
+	}
+	conn, err := net.Dial("tcp", fmt.Sprintf(":%d", response.PortNumber))
+	buff := new(bytes.Buffer)
+	var (
+		size int64
+	)
+	binary.Read(conn, binary.LittleEndian, &size)
+	_, err = io.CopyN(buff, conn, size)
+	if err != nil {
+		red.Println("Something went wrong")
+		return
+	}
+	// TODO: Save file in file system on target location
+	// Assumption: fs.Path includes the users email address
+	if err = os.WriteFile(response.FileName, buff.Bytes(), 0766); err != nil {
+		red.Printf("Could not save file '%s'. Try again later!\n", response.FileName)
+	}
+	green.Printf("Downloaded 1 file from fileport: %s\n", c.Path)
 }

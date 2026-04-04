@@ -42,3 +42,35 @@ func GetFilesList(path string, recursive bool) (fs.Inode, error) {
 	dir := fs.MapToDirectoryInodeR(m)
 	return dir, nil
 }
+
+func GetFile(path string) (*GetFileResponse, error) {
+	ip, err := fs.GetCofigIP()
+	if err != nil {
+		return nil, err
+	}
+	request, err := http.NewRequest("GET", fmt.Sprintf("http://%s:8001/files/get?path=%s", ip, path), nil)
+	if err != nil {
+		return nil, err
+	}
+	auth, err := fs.GetLocalAuth()
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", auth.AuthToken))
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	if response.StatusCode != 200 {
+		return &GetFileResponse{
+			ResponseCode: response.StatusCode,
+			PortNumber:   -1,
+			FileName:     "",
+		}, nil
+	}
+	var getFileRes GetFileResponse
+	if err = json.NewDecoder(response.Body).Decode(&getFileRes); err != nil {
+		return nil, err
+	}
+	return &getFileRes, nil
+}

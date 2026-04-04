@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"log/slog"
+	"math/rand"
 	"net/http"
+	"strings"
 )
 
 func listDirectoryHandler(w http.ResponseWriter, r *http.Request) {
@@ -55,7 +57,27 @@ func getFileHandler(w http.ResponseWriter, r *http.Request) {
 		Unauthorized(w)
 		return
 	}
-	fmt.Println(email)
-	fmt.Println(r.URL.Query())
-	WriteJSON(w, "Hello")
+	query := r.URL.Query()
+	if !query.Has("path") {
+		slog.Info("no path provided")
+		BadRequest(w)
+		return
+	}
+	var path string
+	path = query.Get("path")
+	if path == "" {
+		slog.Info("no such file")
+		NotFound(w)
+		return
+	}
+	path = fmt.Sprintf("%s/%s", email, path)
+	portNum := 8000 + rand.Intn(1000-100) + 100
+	response := &GetFileResponse{
+		ResponseCode: 200,
+		PortNumber:   portNum,
+	}
+	fs := NewFileServer(path, portNum)
+	go fs.Start(MODE_WRITE)
+	response.FileName = strings.Split(path, "/")[len(strings.Split(path, "/"))-1]
+	WriteJSON(w, response)
 }

@@ -26,6 +26,10 @@ type ListCommand struct {
 	Path      string
 }
 
+type GetCommand struct {
+	Path string
+}
+
 var (
 	red      = color.RGB(255, 0, 0)
 	green    = color.RGB(0, 255, 0)
@@ -33,7 +37,7 @@ var (
 	yellow   = color.RGB(255, 255, 0)
 )
 
-func GetCommand(args []string) Command {
+func GenerateCommand(args []string) Command {
 	if len(args) < 1 {
 		fmt.Println("Usage: fileport <command>")
 		yellow.Println("Run 'fileport help' for further instructions")
@@ -77,6 +81,14 @@ func GetCommand(args []string) Command {
 		return &ListCommand{
 			Recursive: rec,
 			Path:      path,
+		}
+	case "get":
+		if len(args) != 2 {
+			yellow.Printf("Usage: fileport %s <file-name>\n", args[0])
+			return nil
+		}
+		return &GetCommand{
+			Path: args[1],
 		}
 	default:
 		fmt.Println("fileport: Invalid argument")

@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	command := cmd.GetCommand(os.Args[1:])
+	command := cmd.GenerateCommand(os.Args[1:])
 	if command == nil {
 		return
 	}

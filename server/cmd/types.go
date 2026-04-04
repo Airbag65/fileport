@@ -46,3 +46,9 @@ type User struct {
 	AuthToken     string `json:"auth_token"`
 	LoggedInCount int    `json:"logged_in_count"`
 }
+
+type GetFileResponse struct {
+	ResponseCode int    `json:"response_code"`
+	PortNumber   int    `json:"port_number"`
+	FileName     string `json:"file_name"`
+}

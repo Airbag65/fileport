@@ -56,6 +56,12 @@ type RegisterRequest struct {
 	Password string `json:"password"`
 }
 
+type GetFileResponse struct {
+	ResponseCode int    `json:"response_code"`
+	PortNumber   int    `json:"port_number"`
+	FileName     string `json:"file_name"`
+}
+
 func GetOutboundIP() string {
 	conn, err := net.Dial("udp4", "8.8.8.8:80")
 	if err != nil {

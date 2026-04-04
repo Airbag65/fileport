@@ -11,15 +11,17 @@ import (
 )
 
 type FileServer struct {
-	Path string
-	port int
+	Path     string
+	port     int
+	namech   chan string
+	FileName string
 }
 
 type ConnMode int
 
 const (
-	Read ConnMode = iota
-	Write
+	MODE_READ ConnMode = iota
+	MODE_WRITE
 )
 
 func NewFileServer(filePath string, port int) *FileServer {
@@ -35,17 +37,16 @@ func (fs *FileServer) Start(mode ConnMode) {
 		slog.Error("Could not start listener", "error", err)
 		return
 	}
-
-	fmt.Println("Starting File Server")
+	fmt.Printf("Starting File Server on port :%d\n", fs.port)
 	conn, err := listener.Accept()
 	if err != nil {
 		slog.Error("Could not accept connection", "error", err)
 		return
 	}
 	switch mode {
-	case Read:
+	case MODE_READ:
 		err = fs.retrieveFile(conn)
-	case Write:
+	case MODE_WRITE:
 		err = fs.sendFile(conn)
 	}
 	if err != nil {
@@ -59,11 +60,9 @@ func (fs *FileServer) Start(mode ConnMode) {
 func (fs *FileServer) retrieveFile(conn net.Conn) error {
 	buff := new(bytes.Buffer)
 	var (
-		size     int64
-		fileName string
+		size int64
 	)
 	binary.Read(conn, binary.LittleEndian, &size)
-	binary.Read(conn, binary.LittleEndian, &fileName)
 	n, err := io.CopyN(buff, conn, size)
 	if err != nil {
 		slog.Error("could not read to buffer", "error", err)
@@ -94,7 +93,6 @@ func (fs *FileServer) sendFile(conn net.Conn) error {
 		return err
 	}
 	binary.Write(conn, binary.LittleEndian, fileStat.Size())
-	binary.Write(conn, binary.LittleEndian, fileStat.Name())
 	n, err := io.CopyN(conn, file, fileStat.Size())
 	if err != nil {
 		slog.Error("could not write file over connection", "error", err)
