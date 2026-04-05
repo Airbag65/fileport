@@ -52,3 +52,13 @@ type GetFileResponse struct {
 	PortNumber   int    `json:"port_number"`
 	FileName     string `json:"file_name"`
 }
+
+type SendFileReponse struct {
+	ResponseCode int `json:"response_code"`
+	PortNumber   int `json:"port_number"`
+}
+
+type UploadFileRequest struct {
+	FileName    string `json:"file_name"`
+	Destination string `json:"destination"`
+}

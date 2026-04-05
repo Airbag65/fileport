@@ -8,11 +8,12 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"strings"
 )
 
 type FileServer struct {
 	Path string
-	port int
+	Port int
 }
 
 type ConnMode int
@@ -25,17 +26,17 @@ const (
 func NewFileServer(filePath string, port int) *FileServer {
 	return &FileServer{
 		Path: filePath,
-		port: port,
+		Port: port,
 	}
 }
 
 func (fs *FileServer) Start(mode ConnMode) {
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", fs.port))
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", fs.Port))
 	if err != nil {
 		slog.Error("Could not start listener", "error", err)
 		return
 	}
-	fmt.Printf("Starting File Server on port :%d\n", fs.port)
+	fmt.Printf("Starting File Server on port :%d\n", fs.Port)
 	conn, err := listener.Accept()
 	if err != nil {
 		slog.Error("Could not accept connection", "error", err)
@@ -55,6 +56,18 @@ func (fs *FileServer) Start(mode ConnMode) {
 	}
 }
 
+func extractDirectory(path string) string {
+	pathParts := strings.Split(path, "/")
+	dirPath := "/"
+	for i, part := range pathParts {
+		if i == len(pathParts)-1 {
+			break
+		}
+		dirPath = fmt.Sprintf("%s%s/", dirPath, part)
+	}
+	return dirPath
+}
+
 func (fs *FileServer) retrieveFile(conn net.Conn) error {
 	buff := new(bytes.Buffer)
 	var (
@@ -68,8 +81,14 @@ func (fs *FileServer) retrieveFile(conn net.Conn) error {
 	}
 	slog.Info("read bytes", "number of bytes", n)
 
-	// TODO: Save file in file system on target location
-	// Assumption: fs.Path includes the users email address
+	if err = os.MkdirAll(extractDirectory(fs.Path), 0755); err != nil {
+		slog.Error("could not mkdir", "error", err)
+		return err
+	}
+	if err = os.WriteFile(fs.Path, buff.Bytes(), 0755); err != nil {
+		slog.Error("could not write file", "error", err)
+		return err
+	}
 	return nil
 }
 

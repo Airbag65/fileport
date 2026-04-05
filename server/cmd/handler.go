@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"math/rand"
@@ -89,5 +90,40 @@ func getFileHandler(w http.ResponseWriter, r *http.Request) {
 	fs := NewFileServer(path, portNum)
 	go fs.Start(MODE_WRITE)
 	response.FileName = strings.Split(path, "/")[len(strings.Split(path, "/"))-1]
+	WriteJSON(w, response)
+}
+
+func uploadFileHandler(w http.ResponseWriter, r *http.Request) {
+	if !ensureJSON(w, r) {
+		slog.Info("bad requsest. Content-Type!=application/json")
+		return
+	}
+	email, err := verifyToken(r)
+	if err != nil {
+		slog.Info("not authorized")
+		Unauthorized(w)
+		return
+	}
+	var req UploadFileRequest
+	if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
+		slog.Info("coult not decode request body")
+		BadRequest(w)
+		return
+	}
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		slog.Error("could not get home dir", "error", err)
+		InternalServerError(w)
+		return
+	}
+	fullPath := fmt.Sprintf("%s/.fileport/users/%s/%s", homeDir, email, req.Destination)
+	fmt.Println(fullPath)
+	portNum := 8000 + rand.Intn(1000-100) + 100
+	fs := NewFileServer(fullPath, portNum)
+	response := &SendFileReponse{
+		ResponseCode: 200,
+		PortNumber:   portNum,
+	}
+	go fs.Start(MODE_READ)
 	WriteJSON(w, response)
 }
