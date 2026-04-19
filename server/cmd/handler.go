@@ -117,16 +117,13 @@ func uploadFileHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fullPath := fmt.Sprintf("%s/.fileport/users/%s/%s", homeDir, email, req.Destination)
-	fmt.Println(fullPath)
 	portNum := 8000 + rand.Intn(1000-100) + 100
 	fs := NewFileServer(fullPath, portNum)
 	response := &SendFileReponse{
 		ResponseCode: 200,
 		PortNumber:   portNum,
 	}
-	msgch := make(chan string, 2)
-	fs.msgch = msgch
 	go fs.Start(MODE_READ)
-	msgch <- req.FileName
+	fs.msgch <- req.FileName
 	WriteJSON(w, response)
 }

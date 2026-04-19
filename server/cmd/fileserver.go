@@ -60,7 +60,7 @@ func (fs *FileServer) Start(mode ConnMode) {
 
 func extractDirectory(path string) string {
 	pathParts := strings.Split(path, "/")
-	dirPath := "/"
+	dirPath := ""
 	for i, part := range pathParts {
 		if i == len(pathParts)-1 {
 			break
@@ -89,21 +89,25 @@ func (fs *FileServer) retrieveFile(conn net.Conn) error {
 	}
 	stat, err := os.Stat(fs.Path)
 	if err != nil {
-		slog.Error("could not get file stats", "error", err)
-		return err
+		slog.Info("could not get file stats", "error", err)
+		goto NotFound
 	}
 	if stat.IsDir() {
 		if fs.Path[len(fs.Path)-1] != '/' {
 			fs.Path = fs.Path + "/"
+			fs.Path = fs.Path + <-fs.msgch
+			goto SaveFile
 		}
-		select {
-		case name := <-fs.msgch:
-			fs.Path = fs.Path + name
-		}
-		// fs.Path = fs.Path + name
-		// d1, d2, d3 := rand.Intn(10), rand.Intn(10), rand.Intn(10)
-		// fs.Path = fmt.Sprintf("%supload_%d%d%d.file", fs.Path, d1, d2, d3)
 	}
+NotFound:
+	fmt.Println(fs.Path)
+	fmt.Println(extractDirectory(fs.Path))
+	stat, err = os.Stat(extractDirectory(fs.Path))
+	if err != nil {
+		slog.Error("should be able to get stat", "error", err)
+		return err
+	}
+SaveFile:
 	if err = os.WriteFile(fs.Path, buff.Bytes(), 0755); err != nil {
 		slog.Error("could not write file", "error", err)
 		return err
