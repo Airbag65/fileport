@@ -127,3 +127,45 @@ func uploadFileHandler(w http.ResponseWriter, r *http.Request) {
 	fs.msgch <- req.FileName
 	WriteJSON(w, response)
 }
+
+func mkdirHandler(w http.ResponseWriter, r *http.Request) {
+	if !ensureJSON(w, r) {
+		slog.Info("bad requsest. Content-Type!=application/json")
+		return
+	}
+	email, err := verifyToken(r)
+	if err != nil {
+		slog.Info("not authorized")
+		Unauthorized(w)
+		return
+	}
+	fmt.Println(email)
+}
+
+func deleteHandler(w http.ResponseWriter, r *http.Request) {
+	if !ensureJSON(w, r) {
+		slog.Info("bad requsest. Content-Type!=application/json")
+		return
+	}
+	email, err := verifyToken(r)
+	if err != nil {
+		slog.Info("not authorized")
+		Unauthorized(w)
+		return
+	}
+	fmt.Println(email)
+}
+
+func moveHandler(w http.ResponseWriter, r *http.Request) {
+	if !ensureJSON(w, r) {
+		slog.Info("bad requsest. Content-Type!=application/json")
+		return
+	}
+	email, err := verifyToken(r)
+	if err != nil {
+		slog.Info("not authorized")
+		Unauthorized(w)
+		return
+	}
+	fmt.Println(email)
+}

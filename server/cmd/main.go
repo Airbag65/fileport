@@ -23,6 +23,9 @@ func main() {
 	server.HandleFunc("GET /files/list", listDirectoryHandler)
 	server.HandleFunc("GET /files/get", getFileHandler)
 	server.HandleFunc("POST /files/upload", uploadFileHandler)
+	server.HandleFunc("POST /files/mkdir", mkdirHandler)
+	server.HandleFunc("DELETE /files/delete", deleteHandler)
+	server.HandleFunc("PUT /files/move", moveHandler)
 
 	handler := cors.Default().Handler(server)
 	fmt.Println("Listening on :8001")
