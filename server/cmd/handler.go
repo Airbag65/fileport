@@ -155,6 +155,13 @@ func mkdirHandler(w http.ResponseWriter, r *http.Request) {
 	if req.DirName[0] != '/' {
 		userHome += "/"
 	}
+	stat, err := os.Stat(userHome + req.DirName)
+	if err == nil {
+		if stat.IsDir() {
+			WriteCustom(w, 304, fmt.Sprintf("'%s' already exists", req.DirName))
+			return
+		}
+	}
 	if err = os.MkdirAll(fmt.Sprintf("%s%s", userHome, req.DirName), 0755); err != nil {
 		slog.Error("could not mkdir", "error", err)
 		InternalServerError(w)
@@ -168,6 +175,58 @@ func mkdirHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteHandler(w http.ResponseWriter, r *http.Request) {
+	if !ensureJSON(w, r) {
+		slog.Info("bad requsest. Content-Type!=application/json")
+		return
+	}
+	email, err := verifyToken(r)
+	if err != nil {
+		slog.Info("not authorized")
+		Unauthorized(w)
+		return
+	}
+	userHome := GetUserDir(email)
+	if userHome == "" {
+		slog.Error("something went wrong while getting user directory")
+		InternalServerError(w)
+		return
+	}
+	var reqBody RemoveRequest
+	if err = json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		slog.Info("could not decode request body")
+		BadRequest(w)
+		return
+	}
+	if reqBody.FileName[0] != '/' {
+		userHome += "/"
+	}
+
+	fullPath := userHome + reqBody.FileName
+	stat, err := os.Stat(fullPath)
+	if err != nil {
+		slog.Error(fmt.Sprintf("could not read stats for '%s'", fullPath), "error", err)
+		InternalServerError(w)
+		return
+	}
+
+	if stat.IsDir() {
+		slog.Info(fmt.Sprintf("'%s' is not a file", fullPath))
+		WriteCustom(w, 304, fmt.Sprintf("'%s' is a directory", reqBody.FileName))
+		return
+	}
+	if err = os.Remove(fullPath); err != nil {
+		slog.Info("no such file")
+		NotFound(w)
+		return
+	}
+	resObj := map[string]any{
+		"message": "OK",
+		"status":  200,
+	}
+	WriteJSON(w, resObj)
+}
+
+func rmdirHandler(w http.ResponseWriter, r *http.Request) {
 	if !ensureJSON(w, r) {
 		slog.Info("bad requsest. Content-Type!=application/json")
 		return

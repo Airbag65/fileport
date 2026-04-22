@@ -31,6 +31,11 @@ func NotFound(w http.ResponseWriter) {
 	w.Write([]byte("Not found"))
 }
 
+func WriteCustom(w http.ResponseWriter, status int, message string) {
+	w.WriteHeader(status)
+	w.Write([]byte(message))
+}
+
 func GetRequestIP(r *http.Request) string {
 	return strings.Split(r.RemoteAddr, ":")[0]
 }
