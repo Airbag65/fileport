@@ -74,6 +74,15 @@ func GetOutboundIP() string {
 	return ip.IP.String()
 }
 
+func AddHeadersJSON(r *http.Request, token string) {
+	r.Header.Add("Content-Type", "application/json")
+	r.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
+}
+
+func AddHeader(r *http.Request, token string) {
+	r.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
+}
+
 type UploadFileRequest struct {
 	FileName    string `json:"file_name"`
 	Destination string `json:"destination"`
@@ -86,4 +95,12 @@ type UploadFileResponse struct {
 
 type MkdirRequest struct {
 	DirName string `json:"dir_name"`
+}
+
+type StatusNotOK struct {
+	StatusCode int
+}
+
+func (e *StatusNotOK) Error() string {
+	return fmt.Sprintf("Status code %d", e.StatusCode)
 }

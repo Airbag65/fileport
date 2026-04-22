@@ -73,8 +73,13 @@ func GenerateCommand(args []string) Command {
 		recAlternatives := []string{"-r", "--recursive"}
 		switch len(args) {
 		case 2:
-			if slices.Contains(recAlternatives, args[1]) {
-				rec = true
+			if args[1][0] == '-' {
+				if slices.Contains(recAlternatives, args[1]) {
+					rec = true
+				} else {
+					fmt.Printf("fileport: Invalid option '%s'. Options: [-r|--recursive]\n", args[1])
+					return nil
+				}
 			} else {
 				path = args[1]
 			}
@@ -83,7 +88,7 @@ func GenerateCommand(args []string) Command {
 				rec = true
 				path = args[1]
 			} else {
-				fmt.Printf("Usage: fileport %s [path] [-r --recursive]", args[0])
+				fmt.Printf("Usage: fileport %s [path] [-r|--recursive]\n", args[0])
 				return nil
 			}
 		}

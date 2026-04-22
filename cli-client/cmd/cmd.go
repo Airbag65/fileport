@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -320,5 +321,14 @@ func (c *UploadCommand) Execute() {
 }
 
 func (c *MkdirCommand) Execute() {
-
+	if err := fpNet.Mkdir(c.DirName); err != nil {
+		status, ok := errors.AsType[*fpNet.StatusNotOK](err)
+		if !ok {
+			red.Println("Something went wrong")
+			return
+		}
+		fmt.Printf("Status was: %d\n", status.StatusCode)
+		return
+	}
+	green.Printf("Created directory: %s\n", c.DirName)
 }

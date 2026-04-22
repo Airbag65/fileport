@@ -112,5 +112,31 @@ func UploadFile(fileName, destPath string) (*UploadFileResponse, error) {
 }
 
 func Mkdir(dirName string) error {
+	ip, err := fs.GetCofigIP()
+	if err != nil {
+		return err
+	}
+	reqBody, err := json.Marshal(&MkdirRequest{
+		DirName: dirName,
+	})
+	if err != nil {
+		return err
+	}
+	request, err := http.NewRequest("POST", fmt.Sprintf("http://%s:8001/files/mkdir", ip), bytes.NewBuffer(reqBody))
+	if err != nil {
+		return err
+	}
+	auth, err := fs.GetLocalAuth()
+	if err != nil {
+		return err
+	}
+	AddHeadersJSON(request, auth.AuthToken)
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	if ResponseCode(response.StatusCode) != OK {
+		return &StatusNotOK{response.StatusCode}
+	}
 	return nil
 }
