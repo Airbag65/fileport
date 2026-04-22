@@ -32,13 +32,26 @@ func verifyToken(r *http.Request) (string, error) {
 	return user.Email, nil
 }
 
+// GetUserDir looks for the path string for the user
+// with the given email. If it does not exists, the directory
+// will be created.
+//
+// Replaces GetUserDirPath
 func GetUserDir(email string) string {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		slog.Error("could not get home dir", "error", err)
 		return ""
 	}
-	return fmt.Sprintf("%s/.fileport/users/%s", homeDir, email)
+	path := fmt.Sprintf("%s/.fileport/users/%s", homeDir, email)
+	_, err = os.Stat(path)
+	if os.IsNotExist(err) {
+		if err = os.MkdirAll(path, 0755); err != nil {
+			slog.Error("could not create user home dir", "error", err)
+			return ""
+		}
+	}
+	return path
 }
 
 /* --- CUSTOM ERRORS --- */

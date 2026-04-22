@@ -70,3 +70,12 @@ type MkdirRequest struct {
 type RemoveRequest struct {
 	FileName string `json:"file_name"`
 }
+
+type RmdirRequest struct {
+	DirName string `json:"dir_name"`
+}
+
+type MoveRequest struct {
+	Target      string `json:"target"`
+	Destination string `json:"destination"`
+}

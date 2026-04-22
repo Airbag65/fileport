@@ -237,7 +237,36 @@ func rmdirHandler(w http.ResponseWriter, r *http.Request) {
 		Unauthorized(w)
 		return
 	}
-	fmt.Println(email)
+	userHome := GetUserDir(email)
+	var req RmdirRequest
+	if err = json.NewDecoder(r.Body).Decode(&req); err != nil {
+		BadRequest(w)
+		return
+	}
+	if req.DirName[0] != '/' {
+		userHome += "/"
+	}
+	fullPath := userHome + req.DirName
+	stat, err := os.Stat(fullPath)
+	if os.IsNotExist(err) {
+		WriteCustom(w, 304, fmt.Sprintf("'%s' no such directory", req.DirName))
+		return
+	} else if !os.IsNotExist(err) && err != nil {
+		InternalServerError(w)
+		return
+	}
+	if !stat.IsDir() {
+		WriteCustom(w, 304, fmt.Sprintf("'%s' no such directory", req.DirName))
+		return
+	}
+	if err = os.RemoveAll(fullPath); err != nil {
+		InternalServerError(w)
+		return
+	}
+	WriteJSON(w, map[string]any{
+		"message": "OK",
+		"status":  200,
+	})
 }
 
 func moveHandler(w http.ResponseWriter, r *http.Request) {
@@ -251,5 +280,19 @@ func moveHandler(w http.ResponseWriter, r *http.Request) {
 		Unauthorized(w)
 		return
 	}
-	fmt.Println(email)
+	_ = GetUserDir(email)
+	var req MoveRequest
+	err = json.NewDecoder(r.Body).Decode(&req)
+	// FIXME: See if req.Destination already exist
+	// FIXME: if not:
+	// FIXME:    move req.Target to req.Destination
+	// FIXME:    proceed as usual
+	// FIXME: else:
+	// FIXME:    send 303 See Other response with approrpiate message
+	// FIXME:    send Port for TCP socket
+	// FIXME:    Open TCP socket for listening
+	// FIXME:    Read 1 byte
+	// FIXME:    Complete action depenting on the read byte
+	// FIXME:    send confirmation over socket
+	// FIXME:    close socket
 }

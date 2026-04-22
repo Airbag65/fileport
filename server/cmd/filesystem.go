@@ -6,9 +6,7 @@ import (
 	"strings"
 )
 
-// GetUserDirPath looks for the path string for the user
-// with the given email. If it does not exists, the directory
-// will be created
+// Deprecated
 func GetUserDirPath(email string) (string, error) {
 	homedir, err := os.UserHomeDir()
 	if err != nil {
