@@ -16,6 +16,23 @@ type Global struct {
 	SourcePath string `toml:"source_path"`
 }
 
+func SaveConfiguration(config *Config) error {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	path := homeDir + "/.fileport/config.toml"
+	configFile, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer configFile.Close()
+	err = toml.NewEncoder(configFile).Encode(config)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 func GetConfiguration() (*Config, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {

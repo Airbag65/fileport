@@ -28,6 +28,7 @@ func (c *HelpCommand) Execute() {
 	fpYellow.Println(title)
 	fmt.Println("Usage: fileport <command> [arguments]\nCOMMANDS:")
 	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
+	fmt.Fprintln(w, " init\tChoose IP address to target")
 	fmt.Fprintln(w, " status\tCheck login status")
 	fmt.Fprintln(w, " login\tLogin to the port suite")
 	fmt.Fprintln(w, " signout\tSign out from the port suite")
@@ -446,7 +447,7 @@ func (c *RmdirCommand) Execute() {
 }
 
 func (c *VersionCommand) Execute() {
-	fmt.Println("fileport version v0.2.1")
+	fmt.Println("fileport version v0.3.1")
 }
 
 func (c *MoveCommand) Execute() {
@@ -505,4 +506,24 @@ func (c *CopyCommand) Execute() {
 	}
 NoErr:
 	color.Green("Copied '%s' to '%s'\n", c.Source, c.Destination)
+}
+
+func (c *InitCommand) Execute() {
+	config, err := fs.GetConfiguration()
+	if err != nil {
+		color.Red("Something went wrong")
+		return
+	}
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("Enter IP address: ")
+	newIp, err := reader.ReadString('\n')
+	if err != nil {
+		color.Red("Something went wrong")
+		return
+	}
+	newIp = strings.TrimSuffix(newIp, "\n")
+	config.Global.IpAddr = newIp
+	fs.SaveConfiguration(config)
+	color.New(color.FgGreen).Print("Now using: ")
+	fmt.Println(newIp)
 }

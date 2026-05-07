@@ -59,6 +59,8 @@ type CopyCommand struct {
 	Destination string
 }
 
+type InitCommand struct{}
+
 var (
 	fpYellow = color.RGB(255, 249, 87)
 )
@@ -174,6 +176,8 @@ func GenerateCommand(args []string) Command {
 			Source:      args[1],
 			Destination: args[2],
 		}
+	case "init":
+		return &InitCommand{}
 	default:
 		fmt.Println("fileport: Invalid argument")
 		return nil
