@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/Airbag65/fileport/cli-client/fs"
 )
@@ -260,7 +261,8 @@ func MoveOrCopy(target, destination string, mode CopyOrMoveEnum) error {
 	if strings.ToLower(confirmation) != "y" {
 		confirmation = "n"
 	}
-	conn, err := net.Dial("tcp", net.JoinHostPort(ip, fmt.Sprintf("%d", resBody.PortNum)))
+	time.Sleep(time.Second)
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", ip, resBody.PortNum))
 	conn.Write([]byte(confirmation))
 	tcpRes, err := bufio.NewReader(conn).ReadBytes('\n')
 	if err != nil {

@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/Airbag65/fileport/cli-client/fs"
 	fpNet "github.com/Airbag65/fileport/cli-client/net"
@@ -322,7 +323,8 @@ func (c *GetCommand) Execute() {
 		color.Red("Something went wrong")
 		return
 	}
-	conn, err := net.Dial("tcp", net.JoinHostPort(ip, fmt.Sprintf("%d", response.PortNumber)))
+	time.Sleep(time.Second)
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", ip, response.PortNumber))
 	buff := new(bytes.Buffer)
 	var (
 		size int64
@@ -389,8 +391,10 @@ func (c *UploadCommand) Execute() {
 		color.Red("Something went wrong")
 		return
 	}
-	conn, err := net.Dial("tcp", net.JoinHostPort(ip, fmt.Sprintf("%d", response.PortNumber)))
+	time.Sleep(time.Second)
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", ip, response.PortNumber))
 	if err != nil {
+		fmt.Println(err)
 		color.Red("Could not connect to file server")
 		return
 	}
@@ -452,7 +456,7 @@ func (c *RmdirCommand) Execute() {
 }
 
 func (c *VersionCommand) Execute() {
-	fmt.Println("fileport version 1.0.0")
+	fmt.Println("fileport version 1.0.1")
 }
 
 func (c *MoveCommand) Execute() {
